@@ -1,10 +1,8 @@
-# 遥感资料 RAG 问答系统（参考 agent.zip 结构版）
-
-这个项目是根据你提供的 `agent.zip` 风格重构的版本。
+# 遥感资料 RAG 问答系统
 
 ## 1. RAG 部分尽量沿用参考项目
 
-本项目 RAG 部分主要沿用：
+本项目 RAG 部分主要用：
 
 ```text
 ChatTongyi
@@ -15,14 +13,6 @@ PyPDFLoader
 TextLoader
 PromptTemplate
 StrOutputParser
-```
-
-没有继续使用：
-
-```text
-OpenAIEmbeddings
-ChatOpenAI
-ChatPromptTemplate
 ```
 
 ## 2. 项目结构
@@ -114,7 +104,7 @@ streamlit run frontend/streamlit_app.py
 4. 提问测试
 ```
 
-## 8. 和参考项目的对应关系
+## 8. 和参考项目的对应关系（参考了黑马的agent+rag项目）
 
 | 参考项目 | 当前项目 |
 |---|---|
