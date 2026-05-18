@@ -9,6 +9,7 @@ from pydantic import BaseModel
 class AskRequest(BaseModel):
     question: str
     top_k: int | None = None
+    session_id: int | None = None
 
 
 class SourceChunk(BaseModel):
@@ -21,12 +22,14 @@ class SourceChunk(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     sources: list[SourceChunk]
+    session_id: int | None = None
 
 
 class UploadResponse(BaseModel):
     message: str
     filename: str
     chunks_count: int
+    session_id: int | None = None
 
 
 class StatsResponse(BaseModel):

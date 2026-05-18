@@ -62,6 +62,36 @@ with st.sidebar:
         st.write("状态码：", resp.status_code)
         st.write("返回内容：", resp.text)
 
+    if st.button("查看文档列表"):
+        resp = requests.get(
+            f"{API_BASE_URL}/api/documents",
+            timeout=30,
+            proxies={"http": None, "https": None},
+        )
+        st.write("状态码：", resp.status_code)
+        st.write("返回内容：", resp.text)
+
+    if st.button("查看会话列表"):
+        resp = requests.get(
+            f"{API_BASE_URL}/api/chats",
+            timeout=30,
+            proxies={"http": None, "https": None},
+        )
+        st.write("状态码：", resp.status_code)
+        st.write("返回内容：", resp.text)
+
+    if st.button("查看当前会话记录"):
+        if st.session_state.session_id is None:
+            st.warning("当前还没有会话")
+        else:
+            resp = requests.get(
+                f"{API_BASE_URL}/api/chats/{st.session_state.session_id}/messages",
+                timeout=30,
+                proxies={"http": None, "https": None},
+            )
+            st.write("状态码：", resp.status_code)
+            st.write("返回内容：", resp.text)
+
     st.divider()
 
     st.header("上传资料")
@@ -104,9 +134,12 @@ if st.button("提问", type="primary"):
     if not question.strip():
         st.warning("请先输入问题")
     else:
+        if "session_id" not in st.session_state:
+            st.session_state.session_id = None
         payload = {
             "question": question,
             "top_k": top_k,
+            "session_id": st.session_state.session_id,
         }
 
         with st.spinner("正在检索并生成回答..."):
@@ -116,12 +149,14 @@ if st.button("提问", type="primary"):
                 timeout=600,
                 proxies={"http": None, "https": None},
             )
-
-        st.write("状态码：", resp.status_code)
-        st.write("返回内容：", resp.text)
+            with st.expander("完整返回内容"):
+                st.write("状态码：", resp.status_code)
+                st.write("返回内容：", resp.text)
 
         if resp.status_code == 200:
             data = resp.json()
+
+            st.session_state.session_id = data.get("session_id")
 
             st.subheader("回答")
             st.write(data["answer"])
