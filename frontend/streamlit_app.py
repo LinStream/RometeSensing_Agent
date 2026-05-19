@@ -11,7 +11,7 @@ Streamlit 前端。
 
 import os
 import time
-from urllib.parse import urlparse
+
 import requests
 import streamlit as st
 
@@ -39,26 +39,20 @@ if "documents" not in st.session_state:
     st.session_state.documents = []
 
 
-def is_local_url(url: str) -> bool:
-    host = urlparse(url).hostname
-    return host in {"localhost", "127.0.0.1", "0.0.0.0"}
-
-
-def request_api(method: str, url: str, use_proxy: bool | None = None, **kwargs):
-    if use_proxy is None:
-        use_proxy = not is_local_url(url)
-
-    session = requests.Session()
-    session.trust_env = use_proxy
-
-    return session.request(
+def request_no_proxy(method: str, url: str, **kwargs):
+    """
+    统一封装 requests，避免本地代理影响 localhost。
+    """
+    return requests.request(
         method=method,
         url=url,
+        proxies={"http": None, "https": None},
         **kwargs,
     )
 
+
 def refresh_documents():
-    resp = request_api(
+    resp = request_no_proxy(
         "GET",
         f"{API_BASE_URL}/api/documents",
         timeout=30,
@@ -92,7 +86,7 @@ def render_sidebar():
                 }
 
                 with st.spinner("正在上传并写入知识库..."):
-                    resp = request_api(
+                    resp = request_no_proxy(
                         "POST",
                         f"{API_BASE_URL}/api/rag/upload",
                         files=files,
@@ -122,7 +116,7 @@ def render_sidebar():
                     )
 
                     if st.button("删除", key=f"delete_doc_{doc['id']}"):
-                        resp = request_api(
+                        resp = request_no_proxy(
                             "DELETE",
                             f"{API_BASE_URL}/api/documents/{doc['id']}",
                             timeout=60,
@@ -139,7 +133,7 @@ def render_sidebar():
 
         with st.expander("开发调试", expanded=False):
             if st.button("测试后端连接"):
-                resp = request_api(
+                resp = request_no_proxy(
                     "GET",
                     f"{API_BASE_URL}/health",
                     timeout=10,
@@ -148,7 +142,7 @@ def render_sidebar():
                 st.write("返回内容：", resp.text)
 
             if st.button("查看知识库状态"):
-                resp = request_api(
+                resp = request_no_proxy(
                     "GET",
                     f"{API_BASE_URL}/api/rag/stats",
                     timeout=30,
@@ -157,7 +151,7 @@ def render_sidebar():
                 st.write("返回内容：", resp.text)
 
             if st.button("批量加载 data 目录"):
-                resp = request_api(
+                resp = request_no_proxy(
                     "POST",
                     f"{API_BASE_URL}/api/rag/load-all",
                     timeout=600,
@@ -166,7 +160,7 @@ def render_sidebar():
                 st.write("返回内容：", resp.text)
 
             if st.button("清空知识库"):
-                resp = request_api(
+                resp = request_no_proxy(
                     "DELETE",
                     f"{API_BASE_URL}/api/rag/clear",
                     timeout=60,
@@ -175,7 +169,7 @@ def render_sidebar():
                 st.write("返回内容：", resp.text)
 
             if st.button("查看会话列表"):
-                resp = request_api(
+                resp = request_no_proxy(
                     "GET",
                     f"{API_BASE_URL}/api/chats",
                     timeout=30,
@@ -187,7 +181,7 @@ def render_sidebar():
                 if st.session_state.session_id is None:
                     st.warning("当前还没有会话")
                 else:
-                    resp = request_api(
+                    resp = request_no_proxy(
                         "GET",
                         f"{API_BASE_URL}/api/chats/{st.session_state.session_id}/messages",
                         timeout=30,
@@ -226,7 +220,7 @@ def render_chat():
 
         with st.chat_message("assistant"):
             with st.spinner("Agent 正在思考并选择工具..."):
-                resp = request_api(
+                resp = request_no_proxy(
                     "POST",
                     f"{API_BASE_URL}/api/chat/ask",
                     json=payload,
