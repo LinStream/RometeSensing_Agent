@@ -8,6 +8,7 @@ FastAPI RAG 接口层。
 4. 返回响应。
 """
 
+import os
 import shutil
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -16,6 +17,7 @@ from backend.app.schemas.rag import AskRequest, AskResponse, StatsResponse, Uplo
 from rag.rag_service import RagSummarizeService
 from utils.config_handler import chroma_conf
 from utils.path_tool import get_abs_path
+from utils.file_handler import get_file_md5_hex
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,11 +49,41 @@ async def upload_file(
     with open(save_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
+    # 计算文件 MD5，用于判断“同一份文件内容”是否已上传过。
+    # 注意：这里不是用文件名去重，因为同名文件内容可能不同；不同名文件内容也可能完全相同。
+    file_md5 = get_file_md5_hex(save_path)
+
+    if not file_md5:
+        # MD5 计算失败时，删除刚保存的临时文件，避免 data 目录残留脏文件。
+        if os.path.exists(save_path):
+            os.remove(save_path)
+        raise HTTPException(status_code=500, detail="文件 MD5 计算失败，无法入库。")
+
+    existed_document = await document_crud.get_indexed_document_by_md5(
+        db=db,
+        file_md5=file_md5,
+    )
+
+    if existed_document is not None:
+        # 已经有同内容文件成功入库，删除本次刚保存的重复文件。
+        # 这里直接拦截，避免 MySQL 新增重复记录，也避免 Chroma 重复写入。
+        if os.path.exists(save_path):
+            os.remove(save_path)
+
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"该文件内容已上传并成功入库，"
+                f"文档ID={existed_document.id}，文件名={existed_document.filename}"
+            ),
+        )
+
     document = await document_crud.create_document(
         db=db,
         filename=file.filename,
         file_path=save_path,
         file_type=file.filename.split(".")[-1].lower(),
+        file_md5=file_md5,
     )
 
     try:

@@ -5,7 +5,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.app.db.session import Base
@@ -20,6 +20,10 @@ class Document(Base):
 
     __tablename__ = "documents"
 
+    __table_args__ = (
+        Index("idx_documents_file_md5", "file_md5"),
+    )
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -27,6 +31,10 @@ class Document(Base):
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
 
     file_type: Mapped[str] = mapped_column(String(50), default="pdf")
+
+    # 文件内容 MD5，用来判断是否重复上传同一份文件。
+    # 注意：用 MD5 判断的是“文件内容是否相同”，比只看文件名更可靠。
+    file_md5: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
 
     chunk_count: Mapped[int] = mapped_column(Integer, default=0)
 
