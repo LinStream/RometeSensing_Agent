@@ -81,6 +81,28 @@ class VectorStoreService:
         with open(self._md5_store_path(), "a", encoding="utf-8") as f:
             f.write(md5_for_save + "\n")
 
+    def _remove_md5_hex(self, md5_for_remove: str):
+        """
+        删除某个文件的 md5 记录。
+
+        为什么删除文档时要同步删除 md5？
+        因为当前项目用 md5.text 判断文件是否已经入库。
+        如果只删除 Chroma 和本地文件，但 md5 还留着，
+        后面重新上传同一个文件时会被误判为“已经入库”，从而跳过。
+        """
+        md5_store_path = self._md5_store_path()
+
+        if not os.path.exists(md5_store_path):
+            return
+
+        with open(md5_store_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        with open(md5_store_path, "w", encoding="utf-8") as f:
+            for line in lines:
+                if line.strip() != md5_for_remove:
+                    f.write(line)
+
     def _get_file_documents(self, read_path: str) -> list[Document]:
         """
         根据文件类型调用不同 loader。
@@ -108,12 +130,17 @@ class VectorStoreService:
 
         return split_documents
 
-    def load_single_file(self, file_path: str) -> int:
+    def load_single_file(self, file_path: str, document_id: int | None = None) -> int:
         """
         加载单个文件到向量库。
 
-        这个方法是为了 FastAPI 上传文件后调用。
-        返回切分出的 chunk 数量。
+        参数：
+        - file_path：本地文件路径
+        - document_id：MySQL documents 表中的主键 id
+
+        为什么要把 document_id 写进 Chroma metadata？
+        因为阶段 3 要支持“删除指定文档”。
+        删除时需要根据 document_id 找到 Chroma 中属于该文档的所有 chunks。
         """
         md5_hex = get_file_md5_hex(file_path)
 
@@ -128,6 +155,12 @@ class VectorStoreService:
 
         if not documents:
             raise ValueError(f"{file_path} 没有有效文本内容，可能是扫描版 PDF 或空文件")
+
+        # 给每个原始 Document 补充 document_id。
+        # splitter 切分后，metadata 会跟随每个 chunk 传递。
+        if document_id is not None:
+            for doc in documents:
+                doc.metadata["document_id"] = document_id
 
         split_documents = self._split_documents(documents)
 
@@ -173,6 +206,23 @@ class VectorStoreService:
 
         retriever = self.vector_store.as_retriever(search_kwargs={"k": top_k})
         return retriever.invoke(query)
+
+
+    def delete_by_document_id(self, document_id: int):
+        """
+        根据 document_id 删除 Chroma 中对应的 chunks。
+
+        前提：入库时每个 chunk 的 metadata 中已经写入 document_id。
+        """
+        self.vector_store.delete(where={"document_id": document_id})
+
+    def remove_md5_by_file_path(self, file_path: str):
+        """
+        根据文件路径计算 md5，并从 md5.text 中移除。
+        """
+        md5_hex = get_file_md5_hex(file_path)
+        if md5_hex:
+            self._remove_md5_hex(md5_hex)
 
     def count(self) -> int:
         """

@@ -1,4 +1,4 @@
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.db.models import Document
@@ -81,3 +81,31 @@ async def list_documents(
     rows = result.scalars().all()
 
     return rows, total
+
+
+async def get_document_by_id(
+    db: AsyncSession,
+    document_id: int,
+) -> Document | None:
+    """
+    根据 id 查询单个文档。
+    删除文档前需要先查到 file_path。
+    """
+    result = await db.execute(
+        select(Document).where(Document.id == document_id)
+    )
+
+    return result.scalar_one_or_none()
+
+
+async def delete_document_by_id(
+    db: AsyncSession,
+    document_id: int,
+) -> None:
+    """
+    删除 MySQL documents 表中的文档记录。
+    """
+    await db.execute(
+        delete(Document).where(Document.id == document_id)
+    )
+    await db.commit()

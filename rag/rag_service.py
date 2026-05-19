@@ -140,11 +140,26 @@ class RagSummarizeService(object):
             "sources": sources,
         }
 
-    def load_single_file(self, file_path: str) -> int:
+    def load_single_file(self, file_path: str, document_id: int | None = None) -> int:
         """
         加载单个文件到知识库。
+
+        document_id 会写入 Chroma metadata，方便后续删除指定文档。
         """
-        return self.vector_store.load_single_file(file_path)
+        return self.vector_store.load_single_file(file_path, document_id=document_id)
+
+    def delete_document(self, document_id: int, file_path: str | None = None):
+        """
+        删除某个文档对应的向量数据。
+
+        参数：
+        - document_id：MySQL documents 表中的 id
+        - file_path：可选，用于同步清理 md5.text 记录，方便后续重新上传同一文件
+        """
+        self.vector_store.delete_by_document_id(document_id)
+
+        if file_path:
+            self.vector_store.remove_md5_by_file_path(file_path)
 
     def load_all_documents(self) -> int:
         """

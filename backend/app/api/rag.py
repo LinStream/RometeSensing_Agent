@@ -30,7 +30,6 @@ rag_service = RagSummarizeService()
 
 
 @router.post("/upload", response_model=UploadResponse)
-@router.post("/upload", response_model=UploadResponse)
 async def upload_file(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
@@ -56,7 +55,7 @@ async def upload_file(
     )
 
     try:
-        chunks_count = rag_service.load_single_file(save_path)
+        chunks_count = rag_service.load_single_file(save_path, document_id=document.id)
 
         await document_crud.update_document_success(
             db=db,

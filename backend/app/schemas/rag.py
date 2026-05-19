@@ -29,7 +29,7 @@ class UploadResponse(BaseModel):
     message: str
     filename: str
     chunks_count: int
-    session_id: int | None = None
+    document_id: int | None = None
 
 
 class StatsResponse(BaseModel):

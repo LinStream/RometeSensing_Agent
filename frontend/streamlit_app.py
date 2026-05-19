@@ -62,14 +62,48 @@ with st.sidebar:
         st.write("状态码：", resp.status_code)
         st.write("返回内容：", resp.text)
 
-    if st.button("查看文档列表"):
+    if st.button("刷新文档列表"):
         resp = requests.get(
             f"{API_BASE_URL}/api/documents",
             timeout=30,
             proxies={"http": None, "https": None},
         )
         st.write("状态码：", resp.status_code)
-        st.write("返回内容：", resp.text)
+
+        if resp.status_code == 200:
+            st.session_state.documents = resp.json()
+        else:
+            st.write("返回内容：", resp.text)
+
+    if "documents" in st.session_state:
+        st.write("已上传文档：")
+
+        for doc in st.session_state.documents:
+            col1, col2 = st.columns([4, 1])
+
+            with col1:
+                st.write(
+                    f"ID={doc['id']} | {doc['filename']} | "
+                    f"chunks={doc['chunk_count']} | status={doc['status']}"
+                )
+
+            with col2:
+                if st.button("删除", key=f"delete_doc_{doc['id']}"):
+                    resp = requests.delete(
+                        f"{API_BASE_URL}/api/documents/{doc['id']}",
+                        timeout=60,
+                        proxies={"http": None, "https": None},
+                    )
+
+                    if resp.status_code == 200:
+                        st.success(f"文档 {doc['filename']} 删除成功")
+                        st.session_state.documents = [
+                            item for item in st.session_state.documents
+                            if item["id"] != doc["id"]
+                        ]
+                        st.rerun()
+                    else:
+                        st.error(resp.text)
 
     if st.button("查看会话列表"):
         resp = requests.get(
