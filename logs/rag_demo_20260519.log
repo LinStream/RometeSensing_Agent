@@ -1,0 +1,2 @@
+2026-05-19 16:52:24,125 - rag_demo - INFO - vector_store.py:156 - [加载知识库] D:\Learning\Agent_Learning\RemoteS_exercise\data\#U793a#U4f8b#U9065#U611f#U77e5#U8bc6.txt 内容已经存在知识库内，跳过
+2026-05-19 16:52:24,126 - rag_demo - INFO - vector_store.py:156 - [加载知识库] D:\Learning\Agent_Learning\RemoteS_exercise\data\示例遥感知识.txt 内容已经存在知识库内，跳过

@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.api.rag import router as rag_router
 from backend.app.api.documents import router as documents_router
 from backend.app.api.chats import router as chats_router
+from backend.app.api.chat import router as chat_router
 from backend.app.db.session import Base, async_engine
 from backend.app.db import models
 
@@ -45,6 +46,7 @@ app.add_middleware(
 app.include_router(rag_router)
 app.include_router(documents_router)
 app.include_router(chats_router)
+app.include_router(chat_router)
 
 
 @app.get("/health")

@@ -83,9 +83,11 @@ class RagSummarizeService(object):
 
         return context
 
-    def rag_summarize(self, query: str, top_k: int | None = None) -> str:
+    def rag_summarize(self, query: str, top_k: int | None = None, history: str = "") -> str:
         """
         RAG 问答主方法。
+
+        history：当前会话的历史问答文本，用于支持多轮追问。
         """
         context_docs = self.retriever_docs(query, top_k=top_k)
 
@@ -98,13 +100,21 @@ class RagSummarizeService(object):
             {
                 "input": query,
                 "context": context,
+                "history": history or "无",
             }
         )
 
-    def rag_summarize_with_sources(self, query: str, top_k: int | None = None) -> dict[str, Any]:
+    def rag_summarize_with_sources(
+        self,
+        query: str,
+        top_k: int | None = None,
+        history: str = "",
+    ) -> dict[str, Any]:
         """
         给 FastAPI 用的版本：
         不仅返回 answer，也返回 sources，便于前端展示引用片段。
+
+        history：当前会话最近若干轮历史，用于让模型理解“它/这个/上述”等指代。
         """
         context_docs = self.retriever_docs(query, top_k=top_k)
 
@@ -120,6 +130,7 @@ class RagSummarizeService(object):
             {
                 "input": query,
                 "context": context,
+                "history": history or "无",
             }
         )
 
@@ -140,13 +151,23 @@ class RagSummarizeService(object):
             "sources": sources,
         }
 
-    def load_single_file(self, file_path: str, document_id: int | None = None) -> int:
+    def load_single_file(
+        self,
+        file_path: str,
+        document_id: int | None = None,
+        file_md5: str | None = None,
+    ) -> int:
         """
         加载单个文件到知识库。
 
         document_id 会写入 Chroma metadata，方便后续删除指定文档。
+        file_md5 由上传接口提前计算，避免向量库层重复读取文件计算 MD5。
         """
-        return self.vector_store.load_single_file(file_path, document_id=document_id)
+        return self.vector_store.load_single_file(
+            file_path,
+            document_id=document_id,
+            file_md5=file_md5,
+        )
 
     def delete_document(self, document_id: int, file_path: str | None = None):
         """

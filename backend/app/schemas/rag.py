@@ -23,6 +23,7 @@ class AskResponse(BaseModel):
     answer: str
     sources: list[SourceChunk]
     session_id: int | None = None
+    intent: str | None = None
 
 
 class UploadResponse(BaseModel):

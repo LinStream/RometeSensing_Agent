@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.crud.document import list_documents,delete_document_by_id, get_document_by_id
 from backend.app.db.session import get_db
 from backend.app.schemas.document import DocumentResponse
-from backend.app.api.rag import rag_service
+from backend.app.services.runtime import rag_service
 
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
 

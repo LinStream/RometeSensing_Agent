@@ -1,3 +1,0 @@
-2026-05-17 18:25:19,188 - rag_demo - INFO - vector_store.py:141 - [加载知识库] D:\Learning\Agent_Learning\RemoteS_exercise\data/测试文档1.pdf 内容加载成功，chunks=6
-2026-05-17 18:39:51,159 - rag_demo - INFO - vector_store.py:124 - [加载知识库] D:\Learning\Agent_Learning\RemoteS_exercise\data\测试文档1.pdf 内容已经存在知识库内，跳过
-2026-05-17 18:39:51,762 - rag_demo - INFO - vector_store.py:141 - [加载知识库] D:\Learning\Agent_Learning\RemoteS_exercise\data\示例遥感知识.txt 内容加载成功，chunks=1

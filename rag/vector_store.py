@@ -130,19 +130,24 @@ class VectorStoreService:
 
         return split_documents
 
-    def load_single_file(self, file_path: str, document_id: int | None = None) -> int:
+    def load_single_file(
+        self,
+        file_path: str,
+        document_id: int | None = None,
+        file_md5: str | None = None,
+    ) -> int:
         """
         加载单个文件到向量库。
 
         参数：
         - file_path：本地文件路径
         - document_id：MySQL documents 表中的主键 id
+        - file_md5：上传接口提前计算好的文件 MD5；如果没有传入，这里才自己计算。
 
         为什么要把 document_id 写进 Chroma metadata？
-        因为阶段 3 要支持“删除指定文档”。
-        删除时需要根据 document_id 找到 Chroma 中属于该文档的所有 chunks。
+        因为删除指定文档时，需要根据 document_id 找到 Chroma 中属于该文档的所有 chunks。
         """
-        md5_hex = get_file_md5_hex(file_path)
+        md5_hex = file_md5 or get_file_md5_hex(file_path)
 
         if not md5_hex:
             raise ValueError(f"无法计算文件 md5：{file_path}")

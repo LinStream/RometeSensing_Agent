@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,6 +50,13 @@ async def create_chat_message(
     )
 
     db.add(message)
+
+    # 有新消息产生时，同步更新会话的 updated_at。
+    # 这样“会话列表”按最近更新时间排序时，最新对话会排在前面。
+    session = await db.get(ChatSession, session_id)
+    if session is not None:
+        session.updated_at = datetime.now()
+
     await db.commit()
     await db.refresh(message)
 
@@ -101,3 +109,30 @@ async def list_chat_messages(
     rows = result.scalars().all()
 
     return rows, total
+
+# 获取最近若干条问答历史，用于阶段 4 多轮对话上下文。
+async def get_recent_chat_messages(
+    db: AsyncSession,
+    session_id: int,
+    limit: int = 6,
+):
+    """
+    获取当前会话最近若干条历史消息。
+
+    为什么只取最近 limit 条？
+    - 全部历史可能很长，会让 prompt 变大，增加 token 消耗；
+    - 多轮追问通常只依赖最近几轮上下文；
+    - 这里先取最近 6 条，后续可以做成配置项。
+    """
+    result = await db.execute(
+        select(ChatMessage)
+        .where(ChatMessage.session_id == session_id)
+        .order_by(ChatMessage.created_at.desc())
+        .limit(limit)
+    )
+
+    rows = result.scalars().all()
+
+    # 数据库查出来是倒序：最新在前。
+    # 作为历史上下文放进 prompt 时，要恢复成时间正序。
+    return list(reversed(rows))
