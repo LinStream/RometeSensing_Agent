@@ -17,6 +17,7 @@ dependencies = [
     "dashscope==1.25.18",
     "chromadb==1.5.9",
     "pypdf==6.11.0",
+    "pymupdf==1.27.2.3",
     "PyYAML==6.0.3",
     "sqlalchemy==2.0.49",
     "aiomysql==0.3.2",
